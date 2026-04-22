@@ -434,3 +434,97 @@ module.exports = {
   }
 };
 ```
+
+---
+
+## 补充：MongoDB vs Mongoose vs Node.js 能连哪些数据库？
+
+### MongoDB vs Mongoose 的区别
+
+| | MongoDB | Mongoose |
+|---|---|---|
+| 本质 | 数据库软件（像 MySQL 一样，是数据库服务） | Node.js 的库，用来操作 MongoDB |
+| 关系 | 数据库软件 | 驱动 + ORM |
+| 类比 | MySQL | JDBC / Sequelize（但更简洁） |
+
+```
+MongoDB = 数据库软件，安装在电脑上运行
+Mongoose = Node.js 连接 MongoDB 的库，加了 Schema（数据模型）封装
+
+类比：
+MongoDB ≈ MySQL（都是数据库服务）
+Mongoose ≈ 原生 mongodb 驱动 + 数据建模层
+```
+
+**Mongoose 做了什么**：
+- 让你用 `new Schema({...})` 定义数据结构
+- 自动验证数据类型
+- 提供 `find`、`create`、`save` 等更直观的 API
+- 处理 MongoDB 的 `_id` 自动生成等细节
+
+**用原生驱动 vs Mongoose**：
+```javascript
+// 原生 mongodb 驱动
+const { MongoClient } = require('mongodb');
+const client = new MongoClient('mongodb://localhost:27017');
+const db = client.db('myapp');
+await db.collection('users').insertOne({ name: '张三', age: 25 });
+
+// Mongoose（加了一层 Schema 封装）
+const mongoose = require('mongoose');
+mongoose.connect('mongodb://localhost:27017/myapp');
+const UserSchema = new mongoose.Schema({ name: String, age: Number });
+const User = mongoose.model('User', UserSchema);
+await User.create({ name: '张三', age: 25 });
+```
+
+两者都能连 MongoDB，Mongoose 只是让代码更有结构。
+
+---
+
+### Node.js 能连哪些数据库？
+
+**Node.js 生态非常丰富，几乎所有主流数据库都有客户端：**
+
+| 数据库 | 驱动/库 | 说明 |
+|--------|---------|------|
+| MongoDB | `mongodb` / `mongoose` | 文档数据库 |
+| MySQL | `mysql2` / `mysql` / `sequelize` | 关系型 |
+| PostgreSQL | `pg` / `sequelize` | 关系型 |
+| Redis | `redis` / `ioredis` | 键值数据库 |
+| SQLite | `better-sqlite3` | 轻量级文件数据库 |
+| Neo4j | `neo4j-driver` | 图数据库 |
+
+**MySQL 示例**：
+```javascript
+const mysql = require('mysql2/promise');
+const conn = await mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: 'xxx',
+  database: 'test'
+});
+const [rows] = await conn.query('SELECT * FROM users');
+```
+
+**Redis 示例**：
+```javascript
+const { createClient } = require('redis');
+const client = createClient();
+await client.set('name', '张三');
+const name = await client.get('name');
+```
+
+**PostgreSQL 示例**：
+```javascript
+const { Client } = require('pg');
+const client = new Client({
+  host: 'localhost',
+  database: 'test',
+  user: 'root',
+  password: 'xxx'
+});
+await client.query('SELECT * FROM users');
+```
+
+Node.js 能连的数据库远不止 MongoDB，只是 MongoDB 在 Node.js 生态里最流行（因为都是 JavaScript/JSON，契合度高）。
