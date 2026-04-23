@@ -478,7 +478,7 @@ export async function* streamChat(request: {
   maxTokens?: number;
   system?: string;
 }): AsyncGenerator<{
-  type: 'start' | 'content' | 'complete' | 'error';
+  type: 'start' | 'content' | 'complete' | 'error' | 'tool_call' | 'tool_result';
   data: unknown;
 }> {
   yield* streamMinimax(request);

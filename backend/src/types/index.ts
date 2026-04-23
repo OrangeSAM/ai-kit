@@ -31,7 +31,7 @@ export interface Tool {
   description: string;
   inputSchema: {
     type: 'object';
-    properties: Record<string, { type: string; description: string }>;
+    properties: Record<string, { type: string; description: string; enum?: string[] }>;
     required: string[];
   };
 }
