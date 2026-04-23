@@ -1,6 +1,17 @@
 /**
  * AI Service - 封装多家 AI 提供商，支持 Function Calling
  * 支持：Anthropic (Claude)、MiniMax（兼容 OpenAI 格式）
+ *
+ * 函数调用层级：
+ *
+ *   routes/chat.ts
+ *     ├─ POST /api/chat        → chatWithTools()    → chatMinimax()
+ *     └─ POST /api/chat/stream → streamChatWithTools() → streamMinimax()
+ *                                                          │
+ *                                      chatMinimax() ──→ sendMinimaxRequest() → MiniMax API
+ *                                      streamMinimax() ─→ sendMinimaxRequest() → MiniMax API
+ *
+ *   chat() / streamChat() — 早期纯聊天入口，当前未被调用
  */
 
 import { config } from '../config/index.js';
@@ -60,7 +71,8 @@ interface MiniMaxStreamChunk {
 }
 
 /**
- * 内部：发送请求到 MiniMax API
+ * 传输层：统一发送 HTTP 请求到 MiniMax API
+ * 被 chatMinimax() 和 streamMinimax() 共同调用
  */
 async function sendMinimaxRequest(
   modelShortId: string,
@@ -101,7 +113,8 @@ async function sendMinimaxRequest(
 }
 
 /**
- * MiniMax 非流式聊天
+ * 核心层：单次非流式请求，解析响应并返回结构化结果
+ * 被 chatWithTools() 和 chat() 调用
  */
 async function chatMinimax(request: {
   model: string;
@@ -149,7 +162,8 @@ async function chatMinimax(request: {
 }
 
 /**
- * MiniMax 流式聊天
+ * 核心层：单次流式请求，逐块解析 SSE 并 yield 事件
+ * 被 streamChatWithTools() 和 streamChat() 调用
  */
 async function* streamMinimax(request: {
   model: string;
@@ -277,7 +291,8 @@ async function* streamMinimax(request: {
 // ============ 带工具调用的聊天 ============
 
 /**
- * 非流式 + Function Calling（自动执行工具）
+ * 入口层：非流式 + Function Calling（自动执行工具）
+ * 路由 POST /api/chat 调用此函数
  */
 export async function chatWithTools(request: {
   model: string;
@@ -339,7 +354,8 @@ export async function chatWithTools(request: {
 }
 
 /**
- * 流式 + Function Calling（支持多轮工具调用）
+ * 入口层：流式 + Function Calling（支持多轮工具调用）
+ * 路由 POST /api/chat/stream 调用此函数
  */
 export async function* streamChatWithTools(request: {
   model: string;
@@ -451,10 +467,10 @@ export async function* streamChatWithTools(request: {
   };
 }
 
-// ============ 统一入口（兼容旧接口）============
+// ============ 早期纯聊天入口（当前未被调用，保留供后续使用）============
 
 /**
- * 非流式聊天（无工具）
+ * 非流式聊天（无工具）— 当前无调用方
  */
 export async function chat(request: {
   model: string;
@@ -470,7 +486,7 @@ export async function chat(request: {
 }
 
 /**
- * 流式聊天（无工具）
+ * 流式聊天（无工具）— 当前无调用方
  */
 export async function* streamChat(request: {
   model: string;
