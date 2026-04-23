@@ -19,19 +19,16 @@ app.use('/api', routes);
 // 启动服务器
 app.listen(config.port, () => {
   console.log(`
-╔═══════════════════════════════════════════════════════════════╗
-║             AI Kit Backend Server                             ║
-╠═══════════════════════════════════════════════════════════════╣
-║  Local:    http://localhost:${config.port}                    ║
-║  API:      http://localhost:${config.port}/api                ║
-║  Health:   http://localhost:${config.port}/api/health         ║
-╠═══════════════════════════════════════════════════════════════╣
-║  Endpoints:                                                   ║
-║  POST /api/chat          - 普通对话                            ║
-║  POST /api/chat/stream   - SSE 流式对话                        ║
-║  GET  /api/models        - 可用模型列表                         ║
-╚═══════════════════════════════════════════════════════════════╝
-  `);
+
+  > AI Kit Backend v1.0
+  > http://localhost:${config.port}
+
+  POST  /api/chat          Chat
+  POST  /api/chat/stream   SSE Streaming
+  GET   /api/models        Model List
+  GET   /api/health        Health Check
+
+`);
 
   if (!config.miniMaxApiKey) {
     console.warn('⚠️  MINIMAX_API_KEY 未配置，请复制 .env.example 为 .env 并填入 key');
