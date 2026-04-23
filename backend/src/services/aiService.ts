@@ -229,6 +229,7 @@ async function* streamMinimax(request: {
             }
 
             if (chunk.usage) {
+              inputTokens = chunk.usage.prompt_tokens;
               outputTokens = chunk.usage.completion_tokens;
             }
           } catch {
