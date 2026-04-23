@@ -67,25 +67,34 @@ async function sendMinimaxRequest(
   stream: boolean,
   maxTokens?: number
 ): Promise<Response> {
+  const apiModelName = getApiModelName(modelShortId);
+  console.log(`[MiniMax Request] modelShortId=${modelShortId} -> apiModel=${apiModelName} messages=${messages.length} stream=${stream}`);
+
   const apiMessages: MiniMaxMessage[] = messages.map(msg => ({
     role: msg.role,
     content: msg.content,
   }));
 
-  return fetch(`${config.miniMaxApiBase}/chat/completions`, {
+  const body = JSON.stringify({
+    model: apiModelName,
+    messages: apiMessages,
+    tools: toMiniMaxToolsFormat(),
+    max_tokens: maxTokens || 1024,
+    stream,
+  });
+  console.log(`[MiniMax Request Body]`, body);
+
+  const response = await fetch(`${config.miniMaxApiBase}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${config.miniMaxApiKey}`,
     },
-    body: JSON.stringify({
-      model: getApiModelName(modelShortId),
-      messages: apiMessages,
-      tools: toMiniMaxToolsFormat(),
-      max_tokens: maxTokens || 1024,
-      stream,
-    }),
+    body,
   });
+
+  console.log(`[MiniMax Response] status=${response.status}`);
+  return response;
 }
 
 /**
@@ -437,7 +446,11 @@ export async function chat(request: {
   maxTokens?: number;
   system?: string;
 }): Promise<ChatResponse> {
-  return chatMinimax(request);
+  let messages = [...request.messages];
+  if (request.system) {
+    messages = [{ role: 'system', content: request.system } as Message, ...messages];
+  }
+  return chatMinimax({ model: request.model, messages, maxTokens: request.maxTokens });
 }
 
 /**
