@@ -97,7 +97,6 @@ async function sendMinimaxRequest(
     max_tokens: maxTokens || 1024,
     stream,
   });
-  console.log(`[MiniMax Request Body]`, body);
 
   const response = await fetch(`${config.miniMaxApiBase}/chat/completions`, {
     method: 'POST',
@@ -107,8 +106,11 @@ async function sendMinimaxRequest(
     },
     body,
   });
-
-  console.log(`[MiniMax Response] status=${response.status}`);
+  // 追加完整响应到日志文件（调试用）
+  const fs = await import('fs/promises');
+  response.clone().text().then(body => {
+    fs.appendFile('minimax-debug.log', `\n${'='.repeat(60)}\n[${new Date().toISOString()}]\n${body}\n`);
+  });
   return response;
 }
 
