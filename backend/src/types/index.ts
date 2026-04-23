@@ -1,7 +1,9 @@
 // 聊天消息格式（OpenAI 风格）
 export interface Message {
-  role: 'system' | 'user' | 'assistant';
+  role: 'system' | 'user' | 'assistant' | 'tool';
   content: string;
+  tool_call_id?: string;
+  tool_calls?: Array<{ id: string; type: string; function: { name: string; arguments: string } }>;
 }
 
 // 请求格式

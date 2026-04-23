@@ -31,9 +31,10 @@ export const ALL_MODELS = [...MINIMAX_MODELS];
 // ============ MiniMax OpenAI 兼容接口 ============
 
 interface MiniMaxMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: 'system' | 'user' | 'assistant' | 'tool';
   content?: string;
   tool_calls?: Array<{ id: string; type: string; function: { name: string; arguments: string } }>;
+  tool_call_id?: string;
 }
 
 interface MiniMaxToolCallResult {
@@ -70,10 +71,12 @@ async function sendMinimaxRequest(
   const apiModelName = getApiModelName(modelShortId);
   console.log(`[MiniMax Request] modelShortId=${modelShortId} -> apiModel=${apiModelName} messages=${messages.length} stream=${stream}`);
 
-  const apiMessages: MiniMaxMessage[] = messages.map(msg => ({
-    role: msg.role,
-    content: msg.content,
-  }));
+  const apiMessages: MiniMaxMessage[] = messages.map(msg => {
+    const m: MiniMaxMessage = { role: msg.role, content: msg.content };
+    if (msg.tool_calls) m.tool_calls = msg.tool_calls;
+    if (msg.tool_call_id) m.tool_call_id = msg.tool_call_id;
+    return m;
+  });
 
   const body = JSON.stringify({
     model: apiModelName,
@@ -304,13 +307,19 @@ export async function chatWithTools(request: {
     currentMessages.push({
       role: 'assistant',
       content: response.content,
+      tool_calls: response.toolCalls!.map(tc => ({
+        id: tc.id,
+        type: 'function',
+        function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
+      })),
     } as Message);
 
     // 添加工具结果消息
     for (const result of toolResults) {
       currentMessages.push({
-        role: 'user',
+        role: 'tool',
         content: JSON.stringify(result.result),
+        tool_call_id: result.toolCallId,
       } as Message);
     }
 
@@ -414,12 +423,18 @@ export async function* streamChatWithTools(request: {
     currentMessages.push({
       role: 'assistant',
       content: fullContent,
+      tool_calls: pendingToolCalls.map(tc => ({
+        id: tc.id,
+        type: 'function',
+        function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
+      })),
     } as Message);
 
     for (const result of toolResults) {
       currentMessages.push({
-        role: 'user',
+        role: 'tool',
         content: JSON.stringify(result.result),
+        tool_call_id: result.toolCallId,
       } as Message);
     }
 
